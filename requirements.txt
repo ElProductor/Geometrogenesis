@@ -1,0 +1,7 @@
+numpy>=1.21.0
+plotly>=5.10.0
+matplotlib>=3.5.0
+imageio>=2.19.0
+qiskit>=1.0.0
+qiskit-aer>=0.13.0
+qiskit-algorithms>=0.3.0

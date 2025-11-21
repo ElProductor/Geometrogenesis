@@ -1,0 +1,22 @@
+# En lugar de SparsePauliOp("Z" * n_qubits)
+# Usaríamos algo así para 2 qubits:
+hamiltonian_realista = SparsePauliOp.from_list([
+    ("IZ", 1),    # Campo longitudinal en el qubit 0
+    ("ZI", 1),    # Campo longitudinal en el qubit 1
+    ("XX", 0.5),  # Interacción entre qubits
+    ("XI", 0.2)   # Campo transverso en el qubit 0
+])
+# Dentro de una nueva función calcular_espectro_potencia()
+
+# Mover el campo final a la CPU si es necesario
+phi_final_cpu = self.xp.asnumpy(self.Phi) if GPU_ENABLED else self.Phi
+
+# 1. Calcular la Transformada de Fourier 2D
+fourier_phi = np.fft.fft2(phi_final_cpu)
+fourier_phi_shifted = np.fft.fftshift(fourier_phi) # Centrar las frecuencias
+
+# 2. Calcular el espectro de potencia
+power_spectrum = np.abs(fourier_phi_shifted)**2
+
+# (El resto del código calcularía promedios radiales y ajustaría la pendiente para encontrar n_s)
+

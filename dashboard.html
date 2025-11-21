@@ -1,0 +1,182 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometrogénesis v10 - Panel de Control</title>
+    <!-- Plotly.js para los gráficos -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 95%; max-width: 1200px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 20px; }
+        h1 { text-align: center; color: #1c1e21; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        .control-group { display: flex; flex-direction: column; }
+        .control-group label { margin-bottom: 5px; font-weight: 600; color: #606770; }
+        .control-group input { width: 100%; box-sizing: border-box; }
+        .control-group span { font-size: 0.9em; color: #606770; text-align: right; }
+        .button-container { text-align: center; margin-bottom: 20px; }
+        button { background-color: #1877f2; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #166fe5; }
+        button:disabled { background-color: #a0bdf0; cursor: not-allowed; }
+        .results { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+        #charts { width: 100%; }
+        #gif-container { display: flex; justify-content: center; align-items: center; border: 1px solid #ddd; border-radius: 8px; min-height: 300px; }
+        #gif-container img { max-width: 100%; border-radius: 8px; }
+        .loader { text-align: center; font-size: 1.2em; color: #606770; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Geometrogénesis v10 - Panel de Control</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="gridSize">Tamaño del Grid (N x N)</label>
+                <input type="range" id="gridSize" min="10" max="100" value="30" step="10" oninput="updateValue(this.id)">
+                <span id="gridSize-value">30</span>
+            </div>
+            <div class="control-group">
+                <label for="pasosSimulacion">Pasos de Simulación</label>
+                <input type="range" id="pasosSimulacion" min="10" max="200" value="50" step="10" oninput="updateValue(this.id)">
+                <span id="pasosSimulacion-value">50</span>
+            </div>
+            <div class="control-group">
+                <label for="couplingStrength">Fuerza de Acoplamiento</label>
+                <input type="range" id="couplingStrength" min="0" max="2" value="0.5" step="0.1" oninput="updateValue(this.id)">
+                <span id="couplingStrength-value">0.5</span>
+            </div>
+            <div class="control-group">
+                <label for="tasaMutacion">Tasa de Mutación</label>
+                <input type="range" id="tasaMutacion" min="0" max="1" value="0.3" step="0.05" oninput="updateValue(this.id)">
+                <span id="tasaMutacion-value">0.3</span>
+            </div>
+            <div class="control-group">
+                <label for="muSquared">Parámetro μ²</label>
+                <input type="range" id="muSquared" min="0.1" max="5" value="1.0" step="0.1" oninput="updateValue(this.id)">
+                <span id="muSquared-value">1.0</span>
+            </div>
+            <div class="control-group">
+                <label for="lambdaParam">Parámetro λ</label>
+                <input type="range" id="lambdaParam" min="0.1" max="5" value="1.0" step="0.1" oninput="updateValue(this.id)">
+                <span id="lambdaParam-value">1.0</span>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button id="run-button" onclick="runSimulation()">▶ Ejecutar Simulación</button>
+        </div>
+
+        <div class="results">
+            <div id="charts"></div>
+            <div id="gif-container">
+                <div id="status-message" class="loader">Esperando simulación...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializa los valores de los sliders al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.controls input[type="range"]').forEach(input => {
+                updateValue(input.id);
+            });
+        });
+
+        function updateValue(id) {
+            const value = document.getElementById(id).value;
+            document.getElementById(id + '-value').textContent = value;
+        }
+
+        async function runSimulation() {
+            const runButton = document.getElementById('run-button');
+            const gifContainer = document.getElementById('gif-container');
+            const chartsContainer = document.getElementById('charts');
+
+            // Deshabilitar botón y mostrar estado
+            runButton.disabled = true;
+            runButton.textContent = 'Simulando...';
+            gifContainer.innerHTML = '<div id="status-message" class="loader">Ejecutando simulación en el backend...</div>';
+            chartsContainer.innerHTML = '';
+
+            // Recolectar parámetros de la UI
+            const params = {
+                gridSize: document.getElementById('gridSize').value,
+                pasosSimulacion: document.getElementById('pasosSimulacion').value,
+                couplingStrength: document.getElementById('couplingStrength').value,
+                tasaMutacion: document.getElementById('tasaMutacion').value,
+                muSquared: document.getElementById('muSquared').value,
+                lambdaParam: document.getElementById('lambdaParam').value,
+                // Parámetros fijos para esta versión
+                nQubits: 2,
+                nLayers: 1,
+                dt: 0.02
+            };
+
+            try {
+                // Llamar a la API del backend
+                const response = await fetch('http://127.0.0.1:5000/run-simulation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params),
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Simulación exitosa, mostrar resultados
+                    drawCharts(data.history);
+                    displayGif(data.gif);
+                } else {
+                    throw new Error(data.message || 'Ocurrió un error desconocido en el backend.');
+                }
+
+            } catch (error) {
+                console.error('Error al ejecutar la simulación:', error);
+                gifContainer.innerHTML = `<div class="loader">Error: ${error.message}</div>`;
+            } finally {
+                // Reactivar el botón
+                runButton.disabled = false;
+                runButton.textContent = '▶ Ejecutar Simulación';
+            }
+        }
+
+        function drawCharts(history) {
+            const steps = Array.from({ length: history.fitness.length }, (_, i) => i);
+
+            Plotly.newPlot('charts', [{
+                x: steps,
+                y: history.fitness,
+                name: 'Fitness',
+                domain: {column: 0},
+            }, {
+                x: steps,
+                y: history.energiaCampo,
+                name: 'Energía Campo',
+                xaxis: 'x2',
+                yaxis: 'y2',
+                domain: {column: 1},
+            }, {
+                x: steps,
+                y: history.energiaCuantica,
+                name: 'Energía Cuántica',
+                xaxis: 'x3',
+                yaxis: 'y3',
+                domain: {column: 2},
+            }], {
+                grid: {rows: 1, columns: 3, pattern: 'independent'},
+                title: 'Resultados de la Simulación'
+            });
+        }
+
+        function displayGif(gifData) {
+            const gifContainer = document.getElementById('gif-container');
+            gifContainer.innerHTML = `<img src="data:image/gif;base64,${gifData}" alt="Animación de la simulación">`;
+        }
+    </script>
+
+</body>
+</html>
