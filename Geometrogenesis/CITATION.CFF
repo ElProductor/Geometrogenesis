@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Villavicencio"
+  given-names: "Juan Pablo"
+title: "Geometrogenesis: Hybrid Quantum Cosmology Simulation"
+version: 1.0.0
+date-released: 2025-12-03
+url: "https://github.com/ElProductor/Geometrogenesis"
+```
+
+### 4. Organización de Resultados (`/results`)
+**Lo que falta:** Veo los archivos `dashboard.html`, `simulacion_...html` y el `.gif` sueltos en la raíz.
+**Por qué importa:** Se ve desordenado. Un repositorio profesional separa el código de la salida.
+**Solución:** Crea una carpeta llamada `results` (o `output`) y mueve ahí todos los HTML, GIFs y TXT generados. Deja la raíz limpia solo para el código y el README.
+
+---
+
+### Resumen de tu estructura:
+
+```text
+Geometrogenesis/
+├── CITATION.cff                
+├── LICENSE                    
+├── README.md                   
+├── Paper_Geometrogenesis.pdf   
+├── reproduce_results.py        
+├── src/                       
+│   ├── geometrogenesis_v12.py
+│   ├── motor_de_valores.py
+│   └── diagnostico.py
+├── results/                    
+│   ├── dashboard.html
+│   ├── animacion.gif
+│   └── reporte.txt
+└── requirements.txt            
